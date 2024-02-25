@@ -31,23 +31,27 @@ from .util import (
 
 from datetime import datetime, timedelta
 
-
+#session 会话，是一种管理用户状态和信息的机制，session的数据是保存在服务器端
+#session相当于一个虚拟的浏览器，在这个浏览器上处于一种保持登录的状态
 class SpiderSession:
     """
     Session相关操作
     """
-
+    #构造函数, self 相当于 C#中的 this,或 VB的 me
+    #_init_构造方法中的 其他参数 为 类的 属性
     def __init__(self):
         self.cookies_dir_path = "cookies/"
         self.user_agent = global_config.getRaw('config', 'default_user_agent')
 
         self.session = self._init_session()
 
+    #初始化一个session对象
     def _init_session(self):
         session = requests.session()
         session.headers = self.get_headers()
         return session
 
+    #http通信的 header
     def get_headers(self):
         return {"User-Agent": self.user_agent,
                 "Accept": "text/html,application/xhtml+xml,application/xml;"
@@ -107,7 +111,7 @@ class SpiderSession:
         with open(cookies_file, 'wb') as f:
             pickle.dump(self.get_cookies(), f)
 
-
+#扫码登录类
 class QrLogin:
     """
     扫码登录
@@ -137,6 +141,7 @@ class QrLogin:
         """
         self.is_login = self._validate_cookies()
 
+##验证cookies是否有效（是否登陆）
     def _validate_cookies(self):
         """
         验证cookies是否有效（是否登陆）
@@ -155,6 +160,7 @@ class QrLogin:
             logger.error("验证cookies是否有效发生异常", e)
         return False
 
+    #获取PC端登录页面
     def _get_login_page(self):
         """
         获取PC端登录页面
@@ -164,6 +170,7 @@ class QrLogin:
         page = self.session.get(url, headers=self.spider_session.get_headers())
         return page
 
+    #缓存并展示登录二维码
     def _get_qrcode(self):
         """
         缓存并展示登录二维码
@@ -192,7 +199,8 @@ class QrLogin:
         if global_config.getRaw('messenger', 'email_enable') == 'true':
             email.send('二维码获取成功，请打开京东APP扫描', "<img src='cid:qr_code.png'>", [email.mail_user], 'qr_code.png')
         return True
-
+    
+    #通过 token 获取票据
     def _get_qrcode_ticket(self):
         """
         通过 token 获取票据
@@ -223,6 +231,7 @@ class QrLogin:
             logger.info('已完成手机客户端确认')
             return resp_json['ticket']
 
+    #通过已获取的票据进行校验
     def _validate_qrcode_ticket(self, ticket):
         """
         通过已获取的票据进行校验
@@ -246,6 +255,7 @@ class QrLogin:
             logger.info(resp_json)
             return False
 
+    #二维码登陆
     def login_by_qrcode(self):
         """
         二维码登陆
@@ -278,6 +288,7 @@ class QrLogin:
 
 
 class JdTdudfp:
+    # 构造 函数
     def __init__(self, sp: SpiderSession):
         self.cookies = sp.get_cookies()
         self.user_agent = sp.get_user_agent()
@@ -285,17 +296,22 @@ class JdTdudfp:
         self.is_init = False
         self.jd_tdudfp = None
 
+    #获取eid和fp
     def init_jd_tdudfp(self):
         self.is_init = True
-
+        #检查是否存在并返回当前运行的循环（事件循环会 在事件列表中 循环执行任务并维护任务的状态，直到所有任务执行完毕）
         loop = asyncio.get_event_loop()
+        #futrue代表了一个「未来」对象，异步操作结束后会把最终结果设置到这个 Future 对象,协程对象
         get_future = asyncio.ensure_future(self._get_auto_eid_fp())
+        '''运行协程'''
         loop.run_until_complete(get_future)
+        '''获取协程运行结果（自动获取eid和fp 方法）'''
         self.jd_tdudfp = get_future.result()
 
     def get(self, key):
         return self.jd_tdudfp.get(key) if self.jd_tdudfp else None
 
+    '''异步方法，用浏览器操作 获取eid和fp'''
     async def _get_auto_eid_fp(self):
 
         jd_tdudfp = None
@@ -305,7 +321,8 @@ class JdTdudfp:
             if open_auto_get_eid_fp == 'false':
                 # 如果配置false，直接返回false
                 return jd_tdudfp
-
+            
+            #浏览器自动化模块'''
             from pyppeteer import launch
             url = "https://www.jd.com/"
             browser = await launch(userDataDir=".user_data", autoClose=True,
@@ -367,18 +384,23 @@ class JdTdudfp:
             logger.info("自动获取JdTdudfp发生异常，将从配置文件读取！")
         return jd_tdudfp
 
-
+# 秒杀类
 class JdSeckill(object):
+    #初始化-构造函数
     def __init__(self):
+        #初始化 session类的实例
         self.spider_session = SpiderSession()
         self.spider_session.load_cookies_from_local()
-
+        #二维码登录？
         self.qrlogin = QrLogin(self.spider_session)
+        #登录之后获取 eid和fp
         self.jd_tdufp = JdTdudfp(self.spider_session)
 
         # 初始化信息
         self.sku_id = global_config.getRaw('config', 'sku_id')
-        self.seckill_num = 2
+        # 秒杀数量
+        self.seckill_num = 1
+        '''Dict啥时候初始化的？'''
         self.seckill_init_info = dict()
         self.seckill_url = dict()
         self.seckill_order_data = dict()
@@ -390,6 +412,7 @@ class JdSeckill(object):
 
         self.running_flag = True
 
+    #判断和调用 账户登录
     def login_by_qrcode(self):
         """
         二维码登陆
@@ -407,6 +430,7 @@ class JdSeckill(object):
         else:
             raise SKException("二维码登录失败！")
 
+
     def check_login_and_jdtdufp(func):
         """
         用户登陆态校验装饰器。若用户未登陆，则调用扫码登陆
@@ -422,7 +446,8 @@ class JdSeckill(object):
             return func(self, *args, **kwargs)
 
         return new_func
-
+    
+    '''reserve 作为 check_login_and_jdtdufp方法的参数'''
     @check_login_and_jdtdufp
     def reserve(self):
         """
@@ -445,6 +470,7 @@ class JdSeckill(object):
         """
         # 增加进程配置
         work_count = int(global_config.getRaw('config', 'work_count'))
+        #压入进程池
         with ProcessPoolExecutor(work_count) as pool:
             for i in range(work_count):
                 pool.submit(self.seckill)
