@@ -13,17 +13,17 @@ RUN set -ex; \
       && echo $TIMEZONE > /etc/timezone; \
      \
       { \
-      echo 'deb https://mirrors.tuna.tsinghua.edu.cn/debian/ buster main contrib non-free'; \
-      echo '# deb-src https://mirrors.tuna.tsinghua.edu.cn/debian/ buster main contrib non-free'; \
-      echo 'deb https://mirrors.tuna.tsinghua.edu.cn/debian/ buster-updates main contrib non-free'; \
-      echo '# deb-src https://mirrors.tuna.tsinghua.edu.cn/debian/ buster-updates main contrib non-free'; \
-      echo 'deb https://mirrors.tuna.tsinghua.edu.cn/debian/ buster-backports main contrib non-free'; \
-      echo '# deb-src https://mirrors.tuna.tsinghua.edu.cn/debian/ buster-backports main contrib non-free'; \
-      echo 'deb https://mirrors.tuna.tsinghua.edu.cn/debian-security buster/updates main contrib non-free'; \
-      echo '# deb-src https://mirrors.tuna.tsinghua.edu.cn/debian-security buster/updates main contrib non-free'; \
+      echo 'deb http://mirrors.tuna.tsinghua.edu.cn/debian/ buster main contrib non-free'; \
+      echo '# deb-src http://mirrors.tuna.tsinghua.edu.cn/debian/ buster main contrib non-free'; \
+      echo 'deb http://mirrors.tuna.tsinghua.edu.cn/debian/ buster-updates main contrib non-free'; \
+      echo '# deb-src http://mirrors.tuna.tsinghua.edu.cn/debian/ buster-updates main contrib non-free'; \
+      echo 'deb http://mirrors.tuna.tsinghua.edu.cn/debian/ buster-backports main contrib non-free'; \
+      echo '# deb-src http://mirrors.tuna.tsinghua.edu.cn/debian/ buster-backports main contrib non-free'; \
+      echo 'deb http://mirrors.tuna.tsinghua.edu.cn/debian-security buster/updates main contrib non-free'; \
+      echo '# deb-src http://mirrors.tuna.tsinghua.edu.cn/debian-security buster/updates main contrib non-free'; \
       } > /etc/apt/sources.list; \
       \
-      # install qrcode view tools.
+      # install qrcode view tools. 安装二维码查看工具
       apt-get update \
         && apt-get install -y --no-install-recommends \
                    git qrencode zbar-tools \
@@ -33,8 +33,8 @@ RUN set -ex; \
                    libxcursor1 libxdamage1 libxext6 libxfixes3 libxi6 libxrandr2 libxrender1 libxss1 libxtst6 \
                    libnss3; \
       \
-      # clone jd seckill code.
-      git clone -b $GIT_BRANCH https://github.com/huanghyw/jd_seckill.git /app; \
+      # clone jd seckill code. 下载github版本 ，但是有修改怎么弄
+      git clone -b $GIT_BRANCH https://github.com/GuofaHuang/QmaoTai.git /app; \
       cd /app \
         && rm -rf .git; \
       \
@@ -62,7 +62,7 @@ RUN set -ex; \
         \
       pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/; \
       \
-      # init Chromium Browser
+      # init Chromium Browser 初始化 chome浏览器
       python -c "import os;\
                 DEFAULT_DOWNLOAD_HOST = 'https://npm.taobao.org/mirrors'; \
                 os.environ[\"PYPPETEER_DOWNLOAD_HOST\"] = DEFAULT_DOWNLOAD_HOST;\
@@ -74,7 +74,7 @@ RUN set -ex; \
       chmod +x /usr/local/bin/docker-python-entrypoint; \
       chmod +x /usr/local/bin/qrcode; \
       \
-      # clean apt cache.
+      # clean apt cache. 清楚缓存
       apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false; \
       rm -rf /var/lib/apt/lists/*
 
